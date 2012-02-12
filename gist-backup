@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+#
+# gist-backup
+#
+# Backs up all your public and private gists
+# to the given directory.
+#
+# Example:
+#
+#   gist-backup ~/gist-backups
+#
+
+# TODO: Handle pages from api.github.com. Going to
+# probably have to rewrite it so that it's not shell hackery.
+
+token=$(git config --get github.gist.oauth.token)
+
+usage() {
+cat <<END_USAGE
+
+Usage:
+
+  gist-backup DIRECTORY
+
+Example:
+
+  gist-backup ~/gist-backups
+
+END_USAGE
+
+if [ -z $token ]
+then
+
+cat <<END_USAGE_NOTE
+NOTE:
+
+  In order for this to work, you're going to need
+  an OAuth token set in your git config under
+  
+    github.gist.oauth.token
+  
+  This is because the API token for your account
+  cannot be used as authentication/authorization
+  in version 3 of GitHub's API.
+
+END_USAGE_NOTE
+fi
+}
+
+if [ -z $token ]
+then
+  echo "No OAuth token found in github.gist.oauth.token git config."
+  exit 1
+fi
+
+# if no backup directory has been given
+if [ -z "$1" ]
+then
+  echo "No backup directory given."
+  usage
+  exit 1
+fi
+
+# if the given directory doesn't exist, create it
+if [ ! -e "$1" ]
+then
+  mkdir -p $1
+fi
+
+# go into the given backup directory
+cd $1
+
+# if we failed to cd for some reason, abort
+if [ $? -gt 0 ]
+then
+  exit 1
+fi
+
+gists=$(
+curl -s -H "Authorization: token $token" https://api.github.com/gists |
+sed -n 's/.*\(git@.\+\)",/\1/p'
+)
+
+# curl can have an empty response for some reason...
+if [ -z "$gists" ]
+then
+  echo "No gists found."
+  exit 1
+fi
+
+# Take's a git remote URI and clones it into
+# the backup directory. If that directory
+# exists already, cd's into it and does a
+# git pull.
+backup() {
+  echo "Backing up $1"
+  local dir=$(echo "$1" | cut -d : -f 2 | cut -d . -f 1)
+
+  if [ -e $dir ]
+  then
+    echo "  Already cloned at $PWD/$dir. Pulling."
+    cd $dir
+    git pull -q
+    cd $OLDPWD
+  else
+    git clone -q $1
+  fi
+}
+
+for gist in $gists
+do
+  backup $gist
+done
