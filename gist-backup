@@ -78,7 +78,7 @@ fi
 
 gists=$(
 curl -s -H "Authorization: token $token" https://api.github.com/gists |
-sed -n 's/.*\(git@.\+\)",/\1/p'
+sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
 )
 
 # curl can have an empty response for some reason...
@@ -94,7 +94,7 @@ fi
 # git pull.
 backup() {
   echo "Backing up $1"
-  local dir=$(echo "$1" | cut -d : -f 2 | cut -d . -f 1)
+  local dir=$(echo "$1" | cut -d / -f 4 | cut -d . -f 1)
 
   if [ -e $dir ]
   then
