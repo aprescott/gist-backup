@@ -92,6 +92,7 @@ backup() {
   fi
 }
 
+NOW=$(date +"%Y-%m-%d_%H-%M")
 page=1
 retries=0
 MAX_RETRIES=5
@@ -101,6 +102,7 @@ do
 
   gists=$(
   curl -s -H "Authorization: token $token" -d "page=$page" -G https://api.github.com/gists |
+  tee "${NOW}_gist-backup_page-${page}.json" |
   sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
   )
 
