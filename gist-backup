@@ -10,11 +10,7 @@
 #   gist-backup ~/gist-backups
 #
 
-# TODO: Handle pages from api.github.com. Going to
-# probably have to rewrite it so that it's not shell hackery.
-
 token=$(git config --get github.gist.oauth.token)
-page=1
 
 usage() {
 cat <<END_USAGE
@@ -96,7 +92,10 @@ backup() {
   fi
 }
 
-while :
+page=1
+retries=0
+MAX_RETRIES=5
+while [ $retries -lt $MAX_RETRIES ]
 do
   echo "Requesting Gist page: $page"
 
@@ -107,8 +106,9 @@ do
 
   if [ -z "$gists" ]
   then
-    echo "No gists found."
-    exit 1
+    echo "No gists found on this page. Trying again."
+    retries=$(( retries + 1 ))
+    continue
   fi
 
   for gist in $gists
@@ -116,5 +116,10 @@ do
     backup $gist
   done
 
-  let "page += 1"
+  page=$(( page + 1 ))
+  retries=0
 done
+
+echo "No gists found (anymore). Not trying again."
+exit 0
+
