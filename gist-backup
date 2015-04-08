@@ -92,60 +92,35 @@ backup() {
   fi
 }
 
-page=1
-retries=0
-MAX_RETRIES=5
-while [ $retries -lt $MAX_RETRIES ]
+for url in https://api.github.com/gists https://api.github.com/gists/starred
 do
-  echo "Requesting Gist page: $page"
-
-  gists=$(
-  curl -s -H "Authorization: token $token" -d "page=$page" -G https://api.github.com/gists |
-  sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
-  )
-
-  if [ -z "$gists" ]
-  then
-    echo "No gists found on this page. Trying again."
-    retries=$(( retries + 1 ))
-    continue
-  fi
-
-  for gist in $gists
-  do
-    backup $gist
-  done
-
-  page=$(( page + 1 ))
+  page=1
   retries=0
-done
-
-page=1
-retries=0
-MAX_RETRIES=5
-while [ $retries -lt $MAX_RETRIES ]
-do
-  echo "Requesting Starred Gist page: $page"
-
-  gists=$(
-  curl -s -H "Authorization: token $token" -d "page=$page" -G https://api.github.com/gists/starred |
-  sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
-  )
-
-  if [ -z "$gists" ]
-  then
-    echo "No starred gists found on this page. Trying again."
-    retries=$(( retries + 1 ))
-    continue
-  fi
-
-  for gist in $gists
+  MAX_RETRIES=5
+  while [ $retries -lt $MAX_RETRIES ]
   do
-    backup $gist
-  done
+    echo "Requesting Gist page: $page from $url"
 
-  page=$(( page + 1 ))
-  retries=0
+    gists=$(
+    curl -s -H "Authorization: token $token" -d "page=$page" -G $url |
+    sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
+    )
+
+    if [ -z "$gists" ]
+    then
+      echo "No gists found on this page. Trying again."
+      retries=$(( retries + 1 ))
+      continue
+    fi
+
+    for gist in $gists
+    do
+      backup $gist
+    done
+
+    page=$(( page + 1 ))
+    retries=0
+  done
 done
 
 echo "No gists found (anymore). Not trying again."
