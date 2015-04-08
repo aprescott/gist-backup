@@ -120,6 +120,34 @@ do
   retries=0
 done
 
+page=1
+retries=0
+MAX_RETRIES=5
+while [ $retries -lt $MAX_RETRIES ]
+do
+  echo "Requesting Starred Gist page: $page"
+
+  gists=$(
+  curl -s -H "Authorization: token $token" -d "page=$page" -G https://api.github.com/gists/starred |
+  sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
+  )
+
+  if [ -z "$gists" ]
+  then
+    echo "No starred gists found on this page. Trying again."
+    retries=$(( retries + 1 ))
+    continue
+  fi
+
+  for gist in $gists
+  do
+    backup $gist
+  done
+
+  page=$(( page + 1 ))
+  retries=0
+done
+
 echo "No gists found (anymore). Not trying again."
 exit 0
 
