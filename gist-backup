@@ -9,8 +9,18 @@
 #
 #   gist-backup ~/gist-backups
 #
+# In addition to your own gists you can also backup your starred gists
+# or (public) gists of a defined user by putting the gists url in an 
+# environment variable.
+#
+# Example:
+#
+#   GIST_URL=https://api.github.com/gists/starred gist-backup ~/gist-backups/starred
+#   GIST_URL=https://api.github.com/users/aprescott/gists gist-backup ~/gist-backups/aprescott
+#
 
 token=$(git config --get github.gist.oauth.token)
+url=${GIST_URL:-https://api.github.com/gists}
 
 usage() {
 cat <<END_USAGE
@@ -97,10 +107,10 @@ retries=0
 MAX_RETRIES=5
 while [ $retries -lt $MAX_RETRIES ]
 do
-  echo "Requesting Gist page: $page"
+  echo "Requesting Gist page: $page" from $url
 
   gists=$(
-  curl -s -H "Authorization: token $token" -d "page=$page" -G https://api.github.com/gists |
+  curl -s -H "Authorization: token $token" -d "page=$page" -G $url |
   sed -n 's/.*git_pull_url": "\(.*\)",/\1/p'
   )
 
