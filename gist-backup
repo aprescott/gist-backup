@@ -107,7 +107,7 @@ retries=0
 MAX_RETRIES=5
 while [ $retries -lt $MAX_RETRIES ]
 do
-  echo "Requesting Gist page: $page" from $url
+  echo "Requesting Gist page: $page from $url"
 
   gists=$(
   curl -s -H "Authorization: token $token" -d "page=$page" -G $url |
