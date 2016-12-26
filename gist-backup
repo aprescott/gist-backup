@@ -123,6 +123,8 @@ do
 
   for gist in $gists
   do
+    # convert https url to git so we can commit & push
+    gist=`echo "$gist" | sed -e 's/https:\/\/gist.github.com\//git@gist.github.com:/g'`
     backup $gist
   done
 
